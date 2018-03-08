@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form action="{{ url_for('enter_food') }}" method="POST">
+	{{ form.user_name.label() }}{{form.user_name() }}<br><br>
+    {{ form.food_name.label() }}{{ form.food_name() }}<br><br>
+    {{ form.diet.label() }}{{ form.diet() }}<br><br>
+    {{ form.health.label() }}{{ form.health() }}<br><br>
+    {{ form.submit() }}
+    {{ form.hidden_tag() }}
+</form>
+
+<div>
+{% for message in get_flashed_messages() %}
+    <strong>{{ message }}</strong>
+{% endfor %}
+</div>
+{% endblock %}
