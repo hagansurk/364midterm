@@ -2,7 +2,7 @@
 {% block content %}
 
 <div>
-<form action="{{ url_for('home') }}" method="POST">
+<form action="{{ url_for('answers') }}" method="GET">
     {{ form.username.label() }}{{ form.username() }}<br><br>
     {{ form.first.label() }}{{ form.first() }}<br><br>
     {{ form.last.label() }}{{ form.last()}}<br>
