@@ -13,6 +13,7 @@ from flask_sqlalchemy import SQLAlchemy
 import requests
 import json
 
+
 ## App setup code
 app = Flask(__name__)
 app.debug = True
@@ -20,7 +21,7 @@ app.use_reloader = True
 
 ## All app.config values
 app.config['SECRET_KEY'] = 'hard to guess string for midterm'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://hsurkamer:hogansurk5@localhost/recipes1'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://hsurkamer:hogansurk5@localhost/recipes'
 app.config['SQLACHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False 
 ## Statements for db setup (and manager setup if using Manager)
@@ -31,7 +32,7 @@ db = SQLAlchemy(app)
 ######## HELPER FXNS (If any) ########
 ######################################
 def check_diet(form, field):
-    diet_list = ['balanced','high-protien','low-fat','low-carb']
+    diet_list = ['balanced','high-protein','low-fat','low-carb']
     if field.data not in diet_list:
         raise ValidationError('Diet name must be one of the options listed.')
 
@@ -40,12 +41,13 @@ def one_word(form, field):
         raise ValidationError('Username Can Not Contain Spaces')
 
 def create_food(food, diet, allergy_health, user_id):
-    food1 = Food.query.filter_by(food_name=food,diet=diet,health=allergy_health).first()
+    food1 = Food.query.filter_by(food_name=food,diet=diet,health=allergy_health,user_id = user_id).first()
     if food1 is None:
         food_enter = Food(food_name=food,diet=diet,health=allergy_health,user_id=user_id)
         db.session.add(food_enter)
         db.session.commit()
         find_recipe(food, diet, allergy_health, user_id)
+    
     else:
         return food1
 
@@ -53,7 +55,22 @@ def find_recipe(food, diet, allergy_health, user_id):
     base_url = "https://api.edamam.com/search?"
     re = requests.get(base_url, params={'q':food,'app_id':'c32dd9d7','app_key':'3a1dc96c14fb8d3a339815d072d89fbb','diet':diet,'health':allergy_health})
     r = json.loads(re.text)
-    print(r)
+    food2 = Food.query.filter_by(food_name=food,diet=diet,health=allergy_health).first()
+    food_id = food2.id
+    for dic in r['hits']:
+        for k,v in dic['recipe'].items():
+            recipe_name = dic['recipe']['label']
+            health_lab = str(dic['recipe']['healthLabels'])
+            ingr = str(dic['recipe']['ingredientLines'])
+            cals = dic['recipe']['calories']
+        print(recipe_name,ingr,cals)
+        rec = Recipes.query.filter_by(recipe = recipe_name).first()
+        if rec is None:
+            rec_enter = Recipes(recipe=recipe_name,ingredients=ingr,health_labels=health_lab, cals=cals, user_id=user_id, food=food_id)
+            db.session.add(rec_enter)
+            db.session.commit()
+        else:
+            return rec
 #curl "https://api.edamam.com/search?q=chicken&app_id=${c32dd9d7}&app_key=${3a1dc96c14fb8d3a339815d072d89fbb}&from=0&to=3&calories=gte%20591,%20lte%20722&health=alcohol-free"
     
 ##################
@@ -74,7 +91,10 @@ class Food(db.Model):
 class Recipes(db.Model):
     __tablename__ = "recipes"
     id = db.Column(db.Integer,primary_key=True)
-    recipe = db.Column(db.String(500))
+    recipe = db.Column(db.String(64))
+    ingredients = db.Column(db.String())
+    health_labels = db.Column(db.String())
+    cals = db.Column(db.Float)
     food = db.Column(db.Integer, db.ForeignKey('foods.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     def __repr__(self):
@@ -107,7 +127,7 @@ class Favorites(db.Model):
 class FoodForm(FlaskForm):
     user_name = StringField("Enter your Username here: ", validators=[Required(),one_word])
     food_name = StringField("Please name of food you would like a recipe for: ",validators=[Required(), Length(max=64)])
-    diet = StringField("Enter the diet you would like the recipe to follow (i.e. balanced, high-protien, low-carb, low-fat): ", validators=[Required(),check_diet])
+    diet = StringField("Enter the diet you would like the recipe to follow (i.e. balanced, high-protein, low-carb, low-fat): ", validators=[Required(),check_diet])
     health = RadioField("Check the name of the allergies you have: ", validators=[Required()], choices=[('alchohol-free','Alcohol'),('peanut-free','Peanut'),('sugar-conscious','Sugar Conscious'),('tree-nut-free','Tree Nuts'),('vegan','Vegan'),('vegetarian','Vegetarian'),('None','none')],default='None')
     submit = SubmitField('Submit')
 
@@ -119,7 +139,7 @@ class NameForm(FlaskForm):
 
 class FavoriteForm(FlaskForm):
     username = StringField("Enter your Username here: ", validators=[Required(),one_word])
-    fav = SelectMultipleField("Choose Favorite Recipes: ", choices = ['PUT RECIPE USER HAS RETURNED HERE'], option_widget = widgets.CheckboxInput(), widget=widgets.ListWidget(prefix_label=False)) #this code I found on http://www.ergo.io/tutorials/persuading-wtforms/persuading-wtforms-to-generate-checkboxes/
+    fav = SelectMultipleField("Choose Favorite Recipes: ", choices = [], option_widget = widgets.CheckboxInput(), widget=widgets.ListWidget(prefix_label=False)) #this code I found on http://www.ergo.io/tutorials/persuading-wtforms/persuading-wtforms-to-generate-checkboxes/
     submit = SubmitField('Submit')
 
 #######################
@@ -146,7 +166,7 @@ def home():
             user = User.query.filter_by(user_name = user_n).first()
             print(user)
             flash('Username is taken, please enter a new name')
-            return redirect(url_for('enter_food'))
+            return redirect(url_for('home'))
         
     else:
         print('i wont work')
@@ -162,7 +182,6 @@ def enter_food():
         name = form.user_name.data
         food = form.food_name.data.lower()
         diet = form.diet.data
-
         allergy_health = form.health.data
         print(food,diet,allergy_health)
         username1 = User.query.filter_by(user_name=name).first()
@@ -172,6 +191,7 @@ def enter_food():
         if food1:
             print(food1)
             flash('Food Added Successfully')
+            return redirect(url_for('see_all_recipes'))
 
     else:
         print("I won't work")
@@ -182,9 +202,24 @@ def enter_food():
         flash('Error in the submission of the form - '+str(errors))
     return render_template('foods.html',form=form)
 
-# @app.route('/recipes')
-# def recipes():
-#     inputs = Food.query.
+@app.route('/recipes')
+def see_all_recipes():
+    all_recipes=[]
+    rec = Recipes.query.all()
+    print(rec)
+    for elem in rec:
+        rec_name = elem.recipe
+        ingr = elem.ingredients
+        cals = elem.cals
+        u_id = elem.user_id
+        user = User.query.filter_by(id=u_id).all()
+        for elem1 in user:
+            user_name = elem1.user_name
+            tupl = (rec_name,ingr,cals,user_name)
+            all_recipes.append(tupl)
+
+    return render_template('all_recipes.html', all_recipes=all_recipes)
+
 
 
 
