@@ -4,9 +4,15 @@
 <ul>
 	<li><a href="{{ url_for('home')}}">Home.</a></li>
 	<li><a href="{{ url_for('enter_food')}}">Enter Food.</a></li>
+	<li><a href="{{ url_for('see_all_recipes')}}">See All Recipes</a></li>
 </ul>
 
-
+<div>
+{% for message in get_flashed_messages() %}
+    <strong>{{ message }}</strong>
+{% endfor %}
+</div>
+<br><br>
 {% block content %}
 
 {% endblock %}
