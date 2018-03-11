@@ -15,10 +15,10 @@ The API required a key and application id, which I have included in my file for 
 /all_reviews --> all_reviews.html allows for the user to see all the reviews left on the page.
 404 --> 404.html to handle a 404 error.
 
-** Requirements **
+### Requirements ###
 I have completed all requirements to the best of my ability as well as the additional 2 requirements.
 
-** - [ ] Ensure that the `SI364midterm.py` file has all the setup (`app.config` values, import statements, code to run the app if that file is run, etc) necessary to run the Flask application, and the application runs correctly on `http://localhost:5000` (and the other routes you set up) **
+### - [ ] Ensure that the `SI364midterm.py` file has all the setup (`app.config` values, import statements, code to run the app if that file is run, etc) necessary to run the Flask application, and the application runs correctly on `http://localhost:5000` (and the other routes you set up) **
 ** - [ ] Add navigation in `base.html` with links (using `a href` tags) that lead to every other viewable page in the application. (e.g. in the lecture examples from the Feb 9 lecture, [like this](https://www.dropbox.com/s/hjcls4cfdkqwy84/Screenshot%202018-02-15%2013.26.32.png?dl=0) ) **
 ** - [ ] Ensure that all templates in the application inherit (using template inheritance, with `extends`) from `base.html` and include at least one additional `block`. **
 ** - [ ] Include at least 2 additional template `.html` files we did not provide. **
@@ -36,10 +36,10 @@ I have completed all requirements to the best of my ability as well as the addit
 ** - [ ] Query data using an `.all()` method in at least one view function and send the results of that query to a template. **
 ** - [ ] Include at least one use of `redirect`. (HINT: This should probably happen in the view function where data is posted...) **
 ** - [ ] Include at least one use of `url_for`. (HINT: This could happen where you render a form...)) **
-** - [ ] Have at least 3 view functions that are not included with the code we have provided. (But you may have more! *Make sure you include ALL view functions in the app in the documentation and ALL pages in the app in the navigation links of `base.html`.*) **
+** - [ ] Have at least 3 view functions that are not included with the code we have provided. (But you may have more! *Make sure you include ALL view functions in the app in the documentation and ALL pages in the app in the navigation links of `base.html`.*) ###
 
 ### Additional Requirements for an additional 200 points (to reach 100%) -- an app with extra functionality!
 
-** (100 points) Include an *additional* model class (to make at least 4 total in the application) with at least 3 columns. Save data to it AND query data from it; use the data you query in a view-function, and as a result of querying that data, something should show up in a view. (The data itself should show up, OR the result of a request made with the data should show up.) **
+### (100 points) Include an *additional* model class (to make at least 4 total in the application) with at least 3 columns. Save data to it AND query data from it; use the data you query in a view-function, and as a result of querying that data, something should show up in a view. (The data itself should show up, OR the result of a request made with the data should show up.) **
 
-** (100 points) Write code in your Python file that will allow a user to submit duplicate data to a form, but will *not* save duplicate data (like the same user should not be able to submit the exact same tweet text for HW3). **
+** (100 points) Write code in your Python file that will allow a user to submit duplicate data to a form, but will *not* save duplicate data (like the same user should not be able to submit the exact same tweet text for HW3). ###
