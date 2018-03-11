@@ -7,7 +7,7 @@
 import os
 from flask import Flask, render_template, session, redirect, url_for, flash, request
 from flask_wtf import FlaskForm
-from wtforms import StringField, RadioField, SubmitField, ValidationError, SelectMultipleField, widgets # Note that you may need to import more here! Check out examples that do what you want to figure out what.
+from wtforms import StringField, RadioField, SubmitField, ValidationError, SelectMultipleField, widgets, IntegerField # Note that you may need to import more here! Check out examples that do what you want to figure out what.
 from wtforms.validators import Required, Length # Here, too
 from flask_sqlalchemy import SQLAlchemy
 import requests
@@ -21,7 +21,7 @@ app.use_reloader = True
 
 ## All app.config values
 app.config['SECRET_KEY'] = 'hard to guess string for midterm'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://hsurkamer:hogansurk5@localhost/recipes'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://hsurkamer:hogansurk5@localhost/recipes1'
 app.config['SQLACHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False 
 ## Statements for db setup (and manager setup if using Manager)
@@ -52,10 +52,16 @@ def create_food(food, diet, allergy_health, user_id):
 
 def find_recipe(food, diet, allergy_health, user_id):
     base_url = "https://api.edamam.com/search?"
-    re = requests.get(base_url, params={'q':food,'app_id':'c32dd9d7','app_key':'3a1dc96c14fb8d3a339815d072d89fbb','diet':diet,'health':allergy_health})
-    r = json.loads(re.text)
-    food2 = Food.query.filter_by(food_name=food,diet=diet,health=allergy_health).first()
-    food_id = food2.id
+    if allergy_health != "None":
+        re = requests.get(base_url, params={'q':food,'app_id':'c32dd9d7','app_key':'3a1dc96c14fb8d3a339815d072d89fbb','diet':diet,'health':allergy_health})
+        r = json.loads(re.text)
+        food2 = Food.query.filter_by(food_name=food,diet=diet,health=allergy_health).first()
+        food_id = food2.id
+    else:
+        re = requests.get(base_url, params={'q':food,'app_id':'c32dd9d7','app_key':'3a1dc96c14fb8d3a339815d072d89fbb','diet':diet})
+        r = json.loads(re.text)
+        food2 = Food.query.filter_by(food_name=food,diet=diet,health=allergy_health).first()
+        food_id = food2.id
     for dic in r['hits']:
         for k,v in dic['recipe'].items():
             recipe_name = dic['recipe']['label']
@@ -69,7 +75,15 @@ def find_recipe(food, diet, allergy_health, user_id):
             db.session.commit()
         else:
             return rec
-
+ 
+def get_or_create_review(user_id, stars, desc):
+    rev1 = Reviews.query.filter_by(star=stars,description=desc,user_id=user_id).first()
+    if rev1 is None:
+        food_enter = Reviews(star=stars,description=desc,user_id=user_id)
+        db.session.add(food_enter)
+        db.session.commit()
+    else:
+        return food1
 ##################
 ##### MODELS #####
 ##################
@@ -103,19 +117,20 @@ class User(db.Model):
     user_name = db.Column(db.String(64))
     first_name = db.Column(db.String(64))
     last_name = db.Column(db.String(64))
-    #fav_recipe = db.relationship('Favorites', backref='User')
+    review = db.relationship('Reviews', backref='User')
     called_recipes = db.relationship('Recipes', backref='User')
     food_entered = db.relationship('Food',backref='User')
     def __repr__(self):
         return "{} (ID: {})".format(self.user_name,self.id)
 
-# class Favorites(db.Model):
-#     __tablename__ = "favorite recipes"
-#     id = db.Column(db.Integer, primary_key=True)
-#     recipe = db.Column(db.String(500))
-#     user_id = db.Column(db.Integer,db.ForeignKey('users.id'))
-#     def __repr__(self):
-#         return "{} | ID:{}".format(self.recipe,self.user_id)
+class Reviews(db.Model):
+    __tablename__ = "Reviews"
+    id = db.Column(db.Integer, primary_key=True)
+    star = db.Column(db.Integer)
+    description = db.Column(db.String(1000))
+    user_id = db.Column(db.Integer,db.ForeignKey('users.id'))
+    def __repr__(self):
+        return "ID:{} Stars:{} | {}".format(sef.user_id,self.star,self.description)
 
 ###################
 ###### FORMS ######
@@ -134,10 +149,11 @@ class NameForm(FlaskForm):
     last = StringField("Enter your Last Name: ", validators=[Required()])
     submit = SubmitField('Submit')
 
-# class FavoriteForm(FlaskForm):
-#     username = StringField("Enter your Username here: ", validators=[Required(),one_word])
-#     fav = SelectMultipleField("Choose Favorite Recipes: ", choices = ['Hey','hello','whats up'], option_widget = widgets.CheckboxInput(), widget=widgets.ListWidget(prefix_label=False)) #this code I found on http://www.ergo.io/tutorials/persuading-wtforms/persuading-wtforms-to-generate-checkboxes/
-#     submit = SubmitField('Submit')
+class ReviewForm(FlaskForm):
+    username = StringField("Enter your Username here: ",validators=[Required(),one_word])
+    stars = IntegerField("Enter a rating out of 5 you would give this application: ",validators=[Required()])
+    description = StringField("Please provide a description to accompany your rating: ",validators=[Required()])
+    submit = SubmitField('Submit')
 
 #######################
 ###### VIEW FXNS ######
@@ -229,15 +245,36 @@ def see_users():
         user_id = elem.id
         foods = Food.query.filter_by(user_id = user_id).all()
         recipes = Recipes.query.filter_by(user_id=user_id).all()
-        for elem1 in foods:
-            food_name = elem1.food_name
-            for elem2 in recipes:
-                recipe_name = elem2.recipe
-                tupl = (name,food_name,recipe_name)
-                all_users.append(tupl)
+        for elem1 in recipes:
+            recipe_name = elem1.recipe
+            for elem2 in foods:
+                food_name = elem2.food_name
+                
+            tupl = (name,food_name,recipe_name)
+            all_users.append(tupl)
     return render_template('all_users.html', all_users=all_users)
 
 
+@app.route('/review', methods=['POST','GET'])
+def review():
+    form = ReviewForm()
+    if request.method == 'POST' and form.validate_on_submit():
+        user = form.username.data
+        stars = form.stars.data
+        desc = form.description.data
+        username1 = User.query.filter_by(user_name=user).first()
+        user_id = username1.id
+        get_or_create_review(user_id,stars,desc)
+        rev1 = Reviews.query.filter_by(star=stars,description=desc,user_id=user_id).first()
+        if rev1:
+            flash('Review Added Successfully')
+            return redirect(url_for('all_reviews'))
+    return render_template('review.html', form=form)
+
+@app.route('/all_reviews')
+def all_reviews():
+    reviews = Reviews.query.all()
+    return render_template('all_reviews.html', reviews = reviews)
 ## Code to run the application...
 
 if __name__ == '__main__':
