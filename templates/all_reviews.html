@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<ul>
+{% for elem in reviews %}
+  <li>User {{ elem.user_id }} gave this application a {{elem.star}} out of 5 because "{{ elem.description }}".</li><br>
+{% endfor %}
+</ul>
+
+{% if not reviews %}
+    There are no reviews to show.
+{% endif %}
+
+{% endblock %}

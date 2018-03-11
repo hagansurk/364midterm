@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+
+
+<form action="{{ url_for('review') }}" method="POST">
+	{{ form.username.label() }}{{form.username() }}<br><br>
+    {{ form.stars.label() }}{{ form.stars() }}<br><br>
+    {{ form.description.label() }}{{ form.description() }}<br><br>
+    {{ form.submit() }}
+    {{ form.hidden_tag() }}
+</form>
+
+
+{% endblock %}
